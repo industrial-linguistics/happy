@@ -2,7 +2,7 @@
 
 all: build-all
 
-build-all: bin/message-api bin/happywatch bin/init-db bin/synthetic-load
+build-all: bin/message-api bin/happywatch bin/init-db bin/synthetic-load bin/send-message
 	@echo "Built binaries in bin/"
 
 bin/message-api: cmd/message-api.go
@@ -24,6 +24,11 @@ bin/synthetic-load: cmd/synthetic-load.go
 	@echo "Building synthetic-load..."
 	@mkdir -p bin
 	go build -o bin/synthetic-load cmd/synthetic-load.go
+
+bin/send-message: cmd/send-message.go
+	@echo "Building send-message..."
+	@mkdir -p bin
+	go build -o bin/send-message cmd/send-message.go
 
 # Legacy target for compatibility
 build: build-all
