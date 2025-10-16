@@ -70,8 +70,8 @@ func main() {
 	// Route request
 	var statusCode int
 	switch {
-	case method == "GET" && endpoint == "/message":
-		statusCode = h.handleGetMessage(queryString)
+	case method == "GET" && endpoint == "/automessage":
+		statusCode = h.handleGetAutoMessage(queryString)
 	case method == "POST" && endpoint == "/message":
 		statusCode = h.handlePostMessage()
 	case method == "GET" && endpoint == "/messages":
@@ -87,7 +87,7 @@ func main() {
 	h.logActivity(endpoint, statusCode, int(elapsed))
 }
 
-func (h *Handler) handleGetMessage(queryString string) int {
+func (h *Handler) handleGetAutoMessage(queryString string) int {
 	values, err := url.ParseQuery(queryString)
 	if err != nil {
 		h.sendError(400, "Invalid query string")
@@ -131,7 +131,7 @@ func (h *Handler) handleGetMessage(queryString string) int {
 	var sequence int
 	h.db.QueryRow(`
         SELECT COUNT(*) FROM activity_log
-        WHERE name = ? AND endpoint = '/message'
+        WHERE name = ? AND endpoint = '/automessage'
     `, name).Scan(&sequence)
 	sequence++ // This is their nth request
 
@@ -148,7 +148,7 @@ func (h *Handler) handleGetMessage(queryString string) int {
 	h.sendJSON(200, response)
 
 	// Log with session info
-	h.logActivityWithDetails("/message", name, sessionID, ip, 200)
+	h.logActivityWithDetails("/automessage", name, sessionID, ip, 200)
 
 	return 200
 }
@@ -222,48 +222,61 @@ func (h *Handler) handleGetMessages(queryString string) int {
 	}
 
 	sessionID := values.Get("session_id")
+	ip := os.Getenv("REMOTE_ADDR")
 
 	// Check rate limit
-	ip := os.Getenv("REMOTE_ADDR")
 	if !h.checkRateLimit(ip) {
 		h.sendError(429, "Rate limit exceeded")
 		return 429
 	}
 
-	// Get random message
-	var message string
-	err = h.db.QueryRow(`
-        SELECT message FROM messages
-        ORDER BY RANDOM() LIMIT 1
-    `).Scan(&message)
+	limit := 10
+	if l := values.Get("limit"); l != "" {
+		fmt.Sscanf(l, "%d", &limit)
+		if limit > 50 {
+			limit = 50
+		}
+	}
+
+	// Get messages sent to this recipient
+	rows, err := h.db.Query(`
+        SELECT message_id, from_user, message, created_at
+        FROM user_messages
+        WHERE to_user = ?
+        ORDER BY created_at DESC
+        LIMIT ?
+    `, recipient, limit)
 
 	if err != nil {
-		log.Printf("Error fetching message: %v", err)
+		log.Printf("Error fetching messages: %v", err)
 		h.sendError(500, "Internal server error")
 		return 500
 	}
+	defer rows.Close()
 
-	// Get sequence number for this recipient
-	var sequence int
-	h.db.QueryRow(`
-        SELECT COUNT(*) FROM activity_log
-        WHERE name = ? AND endpoint = '/messages'
-    `, recipient).Scan(&sequence)
-	sequence++ // This is their nth request
+	var messages []map[string]interface{}
+	for rows.Next() {
+		var msgID, from, message string
+		var createdAt time.Time
+		rows.Scan(&msgID, &from, &message, &createdAt)
 
-	messageID := generateMessageID()
+		messages = append(messages, map[string]interface{}{
+			"message_id": msgID,
+			"from":       from,
+			"message":    message,
+			"timestamp":  createdAt,
+		})
+	}
 
-	response := MessageResponse{
-		Name:      recipient,
-		Message:   message,
-		Timestamp: time.Now(),
-		MessageID: messageID,
-		Sequence:  sequence,
+	response := map[string]interface{}{
+		"recipient": recipient,
+		"count":     len(messages),
+		"messages":  messages,
 	}
 
 	h.sendJSON(200, response)
 
-	// Log with recipient name and session info
+	// Log activity
 	h.logActivityWithDetails("/messages", recipient, sessionID, ip, 200)
 
 	return 200

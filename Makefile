@@ -50,6 +50,7 @@ deploy: build-all
 	cd /var/www/vhosts/happy.industrial-linguistics.com/v1 && \
 		doas ln -sf message-api message && \
 		doas ln -sf message-api messages && \
+		doas ln -sf message-api automessage && \
 		doas ln -sf message-api status
 	@echo "Setting permissions..."
 	doas chown -R www:www /var/www/vhosts/happy.industrial-linguistics.com

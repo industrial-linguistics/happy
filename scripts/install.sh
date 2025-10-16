@@ -23,6 +23,7 @@ if [ -f /tmp/message-api ]; then
     cd ${VHOST_DIR}/v1
     ln -sf message-api message
     ln -sf message-api messages
+    ln -sf message-api automessage
     ln -sf message-api status
     echo "Created symlinks for API endpoints"
 fi

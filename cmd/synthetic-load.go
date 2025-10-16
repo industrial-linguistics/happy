@@ -48,15 +48,9 @@ func main() {
 		// Pick a random user
 		user := users[rand.Intn(len(users))]
 
-		// Pick a random endpoint (message or messages)
-		var endpoint, param string
-		if rand.Float32() < 0.5 {
-			endpoint = "message"
-			param = "name"
-		} else {
-			endpoint = "messages"
-			param = "recipient"
-		}
+		// Always use automessage endpoint for load testing
+		endpoint := "automessage"
+		param := "name"
 
 		// Make request
 		url := fmt.Sprintf("%s/%s?%s=%s", *baseURL, endpoint, param, user)
