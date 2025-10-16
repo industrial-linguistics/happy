@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	dbPath        = "/var/www/vhosts/happy.industrial-linguistics.com/data/positive-social.db"
+	dbPath        = "/vhosts/happy.industrial-linguistics.com/data/positive-social.db"
 	maxNameLen    = 50
 	maxMessageLen = 500
 	rateLimit     = 100 // requests per minute per IP

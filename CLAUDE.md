@@ -1,0 +1,1 @@
+- If you are on merah, you can use doas. That is the only host that can compile and deploy. Everywhere else, don't try to deploy. It's OK to build for testing purposes.

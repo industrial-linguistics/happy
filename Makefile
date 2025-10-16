@@ -1,13 +1,27 @@
-.PHONY: all build build-local clean test install deploy help
+.PHONY: all build-all clean test install deploy help
 
-all: build
+all: build-all
 
-build:
-	@echo "Building binaries..."
-	go build -o bin/message-api cmd/message-api.go
-	go build -o bin/happywatch cmd/happywatch.go
-	go build -o bin/init-db cmd/init-db.go
+build-all: bin/message-api bin/happywatch bin/init-db
 	@echo "Built binaries in bin/"
+
+bin/message-api: cmd/message-api.go
+	@echo "Building message-api..."
+	@mkdir -p bin
+	go build -o bin/message-api cmd/message-api.go
+
+bin/happywatch: cmd/happywatch.go
+	@echo "Building happywatch..."
+	@mkdir -p bin
+	go build -o bin/happywatch cmd/happywatch.go
+
+bin/init-db: cmd/init-db.go
+	@echo "Building init-db..."
+	@mkdir -p bin
+	go build -o bin/init-db cmd/init-db.go
+
+# Legacy target for compatibility
+build: build-all
 
 
 clean:
@@ -19,7 +33,7 @@ test:
 	go test -v ./...
 
 
-deploy: build
+deploy: build-all
 	@echo "Deploying to vhost directories..."
 	@echo "Creating directories..."
 	doas mkdir -p /var/www/vhosts/happy.industrial-linguistics.com/{data,v1,bin,htdocs}
@@ -51,7 +65,8 @@ deploy: build
 
 help:
 	@echo "Available targets:"
-	@echo "  build       - Build binaries (default)"
+	@echo "  build       - Build binaries (only if source changed)"
+	@echo "  build-all   - Build all binaries"
 	@echo "  deploy      - Deploy to vhost directories (requires doas)"
 	@echo "  clean       - Remove build artifacts"
 	@echo "  test        - Run tests"
