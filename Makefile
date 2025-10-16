@@ -2,7 +2,7 @@
 
 all: build-all
 
-build-all: bin/message-api bin/happywatch bin/init-db bin/synthetic-load bin/send-message
+build-all: bin/message-api bin/happywatch bin/happywatch.cgi bin/init-db bin/synthetic-load bin/send-message
 	@echo "Built binaries in bin/"
 
 bin/message-api: cmd/message-api.go
@@ -14,6 +14,11 @@ bin/happywatch: cmd/happywatch.go
 	@echo "Building happywatch..."
 	@mkdir -p bin
 	go build -o bin/happywatch cmd/happywatch.go
+
+bin/happywatch.cgi: cmd/happywatch-cgi.go
+	@echo "Building happywatch CGI..."
+	@mkdir -p bin
+	go build -o bin/happywatch.cgi cmd/happywatch-cgi.go
 
 bin/init-db: cmd/init-db.go
 	@echo "Building init-db..."
@@ -51,6 +56,7 @@ deploy: build-all
 	doas cp bin/message-api /var/www/vhosts/happy.industrial-linguistics.com/v1/
 	doas cp bin/init-db /var/www/vhosts/happy.industrial-linguistics.com/bin/
 	doas cp bin/happywatch /var/www/vhosts/happy.industrial-linguistics.com/bin/
+	doas cp bin/happywatch.cgi /var/www/vhosts/happy.industrial-linguistics.com/v1/happywatch
 	@if [ -f htdocs/index.html ]; then \
 		echo "Copying static site..."; \
 		doas cp htdocs/index.html /var/www/vhosts/happy.industrial-linguistics.com/htdocs/index.html; \

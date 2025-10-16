@@ -40,6 +40,11 @@ if [ -f /tmp/happywatch ]; then
     echo "Installed happywatch to ${VHOST_DIR}/bin/"
 fi
 
+if [ -f /tmp/happywatch.cgi ]; then
+    cp /tmp/happywatch.cgi ${VHOST_DIR}/v1/happywatch
+    echo "Installed happywatch CGI to ${VHOST_DIR}/v1/happywatch"
+fi
+
 # Copy static assets
 if [ -f "${REPO_DIR}/htdocs/index.html" ]; then
     cp "${REPO_DIR}/htdocs/index.html" "${VHOST_DIR}/htdocs/index.html"
