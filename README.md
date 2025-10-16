@@ -163,6 +163,10 @@ curl https://happy.industrial-linguistics.com/v1/status
 ## Monitoring with happywatch
 
 The `happywatch` CLI tool provides real-time monitoring of student activity.
+For a browser-based snapshot of the same information, visit the CGI dashboard
+at `/v1/happywatch` on the deployment host. It renders the live activity list,
+summary statistics, student progress table, and inactive student report using
+the same queries as the CLI.
 
 ### Live Mode (default)
 
