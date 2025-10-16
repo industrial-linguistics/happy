@@ -51,6 +51,11 @@ deploy: build-all
 	doas cp bin/message-api /var/www/vhosts/happy.industrial-linguistics.com/v1/
 	doas cp bin/init-db /var/www/vhosts/happy.industrial-linguistics.com/bin/
 	doas cp bin/happywatch /var/www/vhosts/happy.industrial-linguistics.com/bin/
+	@if [ -f htdocs/index.html ]; then \
+		echo "Copying static site..."; \
+		doas cp htdocs/index.html /var/www/vhosts/happy.industrial-linguistics.com/htdocs/index.html; \
+		doas chmod 644 /var/www/vhosts/happy.industrial-linguistics.com/htdocs/index.html; \
+	fi
 	@echo "Creating symlinks..."
 	cd /var/www/vhosts/happy.industrial-linguistics.com/v1 && \
 		doas ln -sf message-api message && \

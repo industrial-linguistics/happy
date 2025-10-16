@@ -4,6 +4,8 @@
 
 set -e
 
+REPO_DIR=$(cd "$(dirname "$0")/.." && pwd)
+
 VHOST_DIR="/var/www/vhosts/happy.industrial-linguistics.com"
 
 echo "Installing happy-api to $VHOST_DIR..."
@@ -36,6 +38,13 @@ fi
 if [ -f /tmp/happywatch ]; then
     cp /tmp/happywatch ${VHOST_DIR}/bin/
     echo "Installed happywatch to ${VHOST_DIR}/bin/"
+fi
+
+# Copy static assets
+if [ -f "${REPO_DIR}/htdocs/index.html" ]; then
+    cp "${REPO_DIR}/htdocs/index.html" "${VHOST_DIR}/htdocs/index.html"
+    chmod 644 "${VHOST_DIR}/htdocs/index.html"
+    echo "Installed index.html to ${VHOST_DIR}/htdocs/"
 fi
 
 # Set executable permissions

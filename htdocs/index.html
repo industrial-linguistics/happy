@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Happy API ✨</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: linear-gradient(135deg, #fef4ff, #f3fbff 45%, #f1fff3);
+      --primary: #f76ec4;
+      --primary-dark: #d959a4;
+      --accent: #2dd7aa;
+      --text: #243045;
+      --muted: rgba(36, 48, 69, 0.65);
+      --card-bg: rgba(255, 255, 255, 0.85);
+      --code-bg: rgba(36, 48, 69, 0.06);
+      --shadow: 0 18px 40px rgba(66, 50, 105, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Nunito', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      text-align: center;
+      padding: 3.5rem 1.5rem 2.5rem;
+    }
+
+    header h1 {
+      font-size: clamp(2.8rem, 4vw + 1rem, 3.8rem);
+      margin: 0;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: var(--text);
+    }
+
+    header p {
+      max-width: 720px;
+      margin: 1rem auto 0;
+      font-size: 1.15rem;
+      color: var(--muted);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 1.4rem;
+      border-radius: 999px;
+      background: rgba(247, 110, 196, 0.12);
+      color: var(--primary-dark);
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      font-size: 0.95rem;
+      box-shadow: inset 0 0 0 1px rgba(247, 110, 196, 0.25);
+    }
+
+    main {
+      width: min(1040px, calc(100% - 3rem));
+      margin: 0 auto 4rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 2rem;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 20px;
+      padding: 2.25rem;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 24px 44px rgba(66, 50, 105, 0.16);
+    }
+
+    .card h2 {
+      margin-top: 0;
+      font-size: 1.55rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .card h2 span {
+      font-size: 1.75rem;
+    }
+
+    .card p {
+      margin: 0.7rem 0 1rem;
+      line-height: 1.6;
+      color: var(--muted);
+    }
+
+    .endpoint {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.45rem 0.9rem;
+      border-radius: 999px;
+      background: rgba(45, 215, 170, 0.16);
+      color: var(--accent);
+      font-weight: 700;
+      margin-bottom: 1rem;
+      letter-spacing: 0.02em;
+    }
+
+    .endpoint small {
+      background: rgba(36, 48, 69, 0.16);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 0.25rem 0.7rem;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    pre {
+      background: var(--code-bg);
+      border-radius: 16px;
+      padding: 1rem 1.2rem;
+      overflow-x: auto;
+      margin: 1.25rem 0 0;
+      font-size: 0.93rem;
+      line-height: 1.55;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Source Code Pro', monospace;
+      color: var(--text);
+    }
+
+    ul {
+      padding-left: 1.2rem;
+      margin: 0.5rem 0 0;
+      color: var(--muted);
+    }
+
+    footer {
+      text-align: center;
+      padding: 3rem 1.5rem 2.5rem;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    footer strong {
+      color: var(--primary-dark);
+    }
+
+    .cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.85rem 1.6rem;
+      border-radius: 999px;
+      background: var(--primary);
+      color: white;
+      font-weight: 700;
+      text-decoration: none;
+      margin-top: 1.5rem;
+      box-shadow: 0 12px 25px rgba(247, 110, 196, 0.35);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .cta:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 18px 30px rgba(247, 110, 196, 0.45);
+    }
+
+    .cta span {
+      font-size: 1.25rem;
+    }
+
+    .grid-span-2 {
+      grid-column: span 2;
+    }
+
+    @media (max-width: 780px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+      .grid-span-2 {
+        grid-column: span 1;
+      }
+    }
+
+    .sparkles {
+      display: flex;
+      gap: 0.6rem;
+      justify-content: center;
+      margin-top: 2rem;
+    }
+
+    .sparkles span {
+      font-size: 1.4rem;
+      animation: float 2.8s ease-in-out infinite;
+    }
+
+    .sparkles span:nth-child(2) {
+      animation-delay: 0.4s;
+    }
+
+    .sparkles span:nth-child(3) {
+      animation-delay: 0.8s;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); opacity: 0.85; }
+      50% { transform: translateY(-8px); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="badge">✨ Positive vibes delivered via REST ✨</div>
+    <h1>Welcome to the Happy API</h1>
+    <p>
+      The Happy API powers joyful training exercises with encouraging messages, healthy status checks, and an easy-to-love developer experience.
+      Explore the endpoints below and start building smiles into your apps.
+    </p>
+    <a class="cta" href="https://happy.industrial-linguistics.com/v1/status" target="_blank" rel="noopener">
+      <span>💖</span> Check API status live
+    </a>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2><span>🌈</span> GET /v1/message</h2>
+      <div class="endpoint">
+        <small>GET</small>
+        https://happy.industrial-linguistics.com/v1/message
+      </div>
+      <p>Fetch a random encouraging message personalized with the recipient’s name.</p>
+      <strong>Required query parameters:</strong>
+      <ul>
+        <li><code>name</code> &mdash; the lucky person who needs a boost (1&ndash;50 chars)</li>
+      </ul>
+      <p><strong>Optional:</strong> <code>session_id</code> to track training progress.</p>
+      <pre><code>curl "https://happy.industrial-linguistics.com/v1/message?name=Nova&session_id=go_bootcamp"
+</code></pre>
+    </section>
+
+    <section class="card">
+      <h2><span>💌</span> POST /v1/message</h2>
+      <div class="endpoint">
+        <small>POST</small>
+        https://happy.industrial-linguistics.com/v1/message
+      </div>
+      <p>Send a heartfelt message from one student to another. Perfect for peer encouragement!</p>
+      <pre><code>curl -X POST https://happy.industrial-linguistics.com/v1/message \
+  -H "Content-Type: application/json" \
+  -d '{
+        "from": "Sky",
+        "to": "River",
+        "message": "Your code review kindness made my day!",
+        "session_id": "happy_hour"
+      }'
+</code></pre>
+      <p><strong>Response:</strong> Message ID, timestamp, and delivery status.</p>
+    </section>
+
+    <section class="card">
+      <h2><span>📬</span> GET /v1/messages</h2>
+      <div class="endpoint">
+        <small>GET</small>
+        https://happy.industrial-linguistics.com/v1/messages
+      </div>
+      <p>Gather all the encouraging notes for a specific recipient.</p>
+      <strong>Required query parameters:</strong>
+      <ul>
+        <li><code>recipient</code> &mdash; whose inbox to peek at</li>
+      </ul>
+      <p><strong>Optional:</strong> <code>limit</code> (default 10, max 50).</p>
+      <pre><code>curl "https://happy.industrial-linguistics.com/v1/messages?recipient=River&limit=5"
+</code></pre>
+    </section>
+
+    <section class="card">
+      <h2><span>🩺</span> GET /v1/status</h2>
+      <div class="endpoint">
+        <small>GET</small>
+        https://happy.industrial-linguistics.com/v1/status
+      </div>
+      <p>Quick health check. Use this endpoint in your uptime monitors or training scripts.</p>
+      <pre><code>curl https://happy.industrial-linguistics.com/v1/status
+</code></pre>
+      <p><strong>Response:</strong> JSON including service status, version, and request counts.</p>
+    </section>
+
+    <section class="card grid-span-2">
+      <h2><span>🛠️</span> Developer Goodies</h2>
+      <p>Level up your integrations with utilities tailored for workshops and classrooms.</p>
+      <ul>
+        <li><strong>happywatch</strong> &mdash; real-time CLI monitor to track student progress.</li>
+        <li><strong>Rate limiting</strong> &mdash; friendly 100 requests/minute per IP to keep things smooth.</li>
+        <li><strong>Session tracking</strong> &mdash; use <code>session_id</code> to group activity by cohort.</li>
+        <li><strong>SQLite backend</strong> &mdash; easy to inspect and reset between training runs.</li>
+      </ul>
+      <pre><code># Watch live activity
+happywatch
+
+# See summary statistics
+happywatch -mode summary
+
+# Export a single student's activity
+happywatch -mode export -student "River" > river.csv
+</code></pre>
+    </section>
+  </main>
+
+  <div class="sparkles" aria-hidden="true">
+    <span>✨</span>
+    <span>🌟</span>
+    <span>💫</span>
+  </div>
+
+  <footer>
+    Built with <strong>encouragement</strong>, <strong>Go</strong>, and lots of <strong>happy energy</strong>.
+  </footer>
+</body>
+</html>
