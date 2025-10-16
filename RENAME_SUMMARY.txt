@@ -1,0 +1,38 @@
+Renamed logwatch → happywatch and moved location:
+
+CHANGES:
+1. Renamed cmd/logwatch.go → cmd/happywatch.go
+2. Updated all build targets in Makefile
+3. Changed deployment location:
+   OLD: /usr/local/bin/logwatch (requires privileges)
+   NEW: /var/www/vhosts/happy.industrial-linguistics.com/bin/happywatch
+
+UPDATED FILES:
+✓ cmd/happywatch.go (renamed)
+✓ Makefile (build, build-local, install, deploy targets)
+✓ scripts/install.sh
+✓ README.md (44 references updated)
+✓ QUICKSTART.md
+✓ DEPLOYMENT.md
+✓ VHOST_STRUCTURE.md
+✓ EXERCISES.md
+
+USAGE:
+  # On server (full path):
+  /var/www/vhosts/happy.industrial-linguistics.com/bin/happywatch
+
+  # Or add to PATH:
+  export PATH=$PATH:/var/www/vhosts/happy.industrial-linguistics.com/bin
+  
+  # Then:
+  happywatch -mode students
+  happywatch -mode summary
+  happywatch -mode live
+
+DEPLOYMENT:
+  make deploy
+  
+  Deploys to:
+  - message-api → v1/
+  - init-db → bin/
+  - happywatch → bin/  (no longer tries /usr/local/bin)

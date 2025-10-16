@@ -1,0 +1,41 @@
+Updated all paths for virtual host structure:
+
+OLD STRUCTURE:
+  /var/www/data/positive-social.db
+  /var/www/bin/message-api
+  /var/www/bin/init-db
+  /var/www/logs/
+
+NEW STRUCTURE:
+  /var/www/vhosts/happy.industrial-linguistics.com/
+    ├── htdocs/      (web pages)
+    ├── v1/          (CGI programs - message-api goes here)
+    ├── data/        (SQLite database)
+    ├── logs/        (access/error logs)
+    └── bin/         (utility programs like init-db)
+
+UPDATED FILES:
+  ✓ cmd/message-api.go    - database path
+  ✓ cmd/logwatch.go       - database path
+  ✓ cmd/init-db.go        - database path
+  ✓ Makefile              - install target paths
+  ✓ deploy/httpd.conf     - vhost configuration
+  ✓ scripts/install.sh    - deployment paths
+  ✓ scripts/cleanup-db.sh - database/log paths
+  ✓ README.md             - all documentation paths
+  ✓ QUICKSTART.md         - all quick reference paths
+
+NEW FILE:
+  + VHOST_STRUCTURE.md    - comprehensive vhost documentation
+
+KEY CONFIGURATION:
+  httpd.conf location for CGI:
+    location "/v1/*" {
+        fastcgi socket "/run/slowcgi.sock"
+        root "/vhosts/happy.industrial-linguistics.com/v1/message-api"
+    }
+
+READY TO DEPLOY:
+  make build
+  export DEPLOY_HOST=user@happy.industrial-linguistics.com
+  make deploy
