@@ -56,21 +56,27 @@ func main() {
 
 	// Parse CGI request
 	method := os.Getenv("REQUEST_METHOD")
-	pathInfo := os.Getenv("PATH_INFO")
+	scriptName := os.Getenv("SCRIPT_NAME")
 	queryString := os.Getenv("QUERY_STRING")
+
+	// Extract endpoint from SCRIPT_NAME (e.g., "/v1/status" -> "/status")
+	endpoint := scriptName
+	if strings.HasPrefix(scriptName, "/v1/") {
+		endpoint = "/" + strings.TrimPrefix(scriptName, "/v1/")
+	}
 
 	startTime := time.Now()
 
 	// Route request
 	var statusCode int
 	switch {
-	case method == "GET" && pathInfo == "/message":
+	case method == "GET" && endpoint == "/message":
 		statusCode = h.handleGetMessage(queryString)
-	case method == "POST" && pathInfo == "/message":
+	case method == "POST" && endpoint == "/message":
 		statusCode = h.handlePostMessage()
-	case method == "GET" && pathInfo == "/messages":
+	case method == "GET" && endpoint == "/messages":
 		statusCode = h.handleGetMessages(queryString)
-	case method == "GET" && pathInfo == "/status":
+	case method == "GET" && endpoint == "/status":
 		statusCode = h.handleStatus()
 	default:
 		statusCode = h.handleNotFound()
@@ -78,7 +84,7 @@ func main() {
 
 	// Log activity
 	elapsed := time.Since(startTime).Milliseconds()
-	h.logActivity(pathInfo, statusCode, int(elapsed))
+	h.logActivity(endpoint, statusCode, int(elapsed))
 }
 
 func (h *Handler) handleGetMessage(queryString string) int {
