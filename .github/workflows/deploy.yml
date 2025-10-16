@@ -1,0 +1,22 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy to merah
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: merah.cassia.ifost.org.au
+          username: happy
+          key: ${{ secrets.DEPLOYMENT_SSH_KEY }}
+          script: |
+            cd /home/happy/happy
+            ./scripts/update-and-deploy.sh
