@@ -46,71 +46,96 @@ func main() {
 }
 
 func runLiveMode(db *sql.DB, tail int) {
-	fmt.Println("=== Live Activity Monitor ===")
-	fmt.Println("Ctrl+C to exit\n")
+	// Hide cursor
+	fmt.Print("\033[?25l")
+	defer fmt.Print("\033[?25h") // Show cursor on exit
 
-	var lastID int64
-
-	// Get starting position
-	db.QueryRow("SELECT IFNULL(MAX(id), 0) FROM activity_log").Scan(&lastID)
-
-	// Show recent history
-	showRecentActivity(db, lastID-int64(tail), lastID)
-
-	// Poll for new entries
 	for {
-		time.Sleep(2 * time.Second)
+		// Clear screen and move to top
+		fmt.Print("\033[2J\033[H")
 
+		fmt.Println("=== Happy API Activity Monitor ===")
+		fmt.Printf("Last updated: %s (Press Ctrl+C to exit)\n\n", time.Now().Format("15:04:05"))
+
+		// Get active users with their latest activity
 		rows, err := db.Query(`
-            SELECT id, timestamp, name, endpoint, response_code, session_id
+            SELECT
+                name,
+                MAX(timestamp) as last_seen,
+                endpoint,
+                COUNT(*) as total_count,
+                SUM(CASE WHEN response_code >= 400 THEN 1 ELSE 0 END) as error_count
             FROM activity_log
-            WHERE id > ?
-            ORDER BY id
-        `, lastID)
+            WHERE name IS NOT NULL AND name != ''
+              AND timestamp >= datetime('now', '-1 hour')
+            GROUP BY name
+            ORDER BY last_seen DESC
+        `)
 
 		if err != nil {
+			fmt.Printf("Error querying database: %v\n", err)
+			time.Sleep(3 * time.Second)
 			continue
 		}
 
-		count := 0
+		type UserActivity struct {
+			name       string
+			lastSeen   time.Time
+			endpoint   string
+			totalCount int
+			errorCount int
+		}
+
+		var users []UserActivity
 		for rows.Next() {
-			var id int64
-			var ts time.Time
-			var name, endpoint, sessionID sql.NullString
-			var responseCode int
-
-			rows.Scan(&id, &ts, &name, &endpoint, &responseCode, &sessionID)
-
-			status := "✓"
-			if responseCode >= 400 {
-				status = "✗"
-			}
-
-			nameStr := "anonymous"
-			if name.Valid && name.String != "" {
-				nameStr = name.String
-			}
-
-			sessionStr := "none"
-			if sessionID.Valid && sessionID.String != "" {
-				sessionStr = sessionID.String
-			}
-
-			fmt.Printf("%s [%s] %-15s %s (session: %s)\n",
-				status,
-				ts.Format("15:04:05"),
-				truncate(nameStr, 15),
-				endpoint.String,
-				truncate(sessionStr, 10))
-
-			lastID = id
-			count++
+			var u UserActivity
+			rows.Scan(&u.name, &u.lastSeen, &u.endpoint, &u.totalCount, &u.errorCount)
+			users = append(users, u)
 		}
 		rows.Close()
 
-		if count > 0 {
-			fmt.Println()
+		if len(users) == 0 {
+			fmt.Println("No activity in the last hour.")
+		} else {
+			// Print header
+			w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
+			fmt.Fprintf(w, "Name\tLast Seen\tLast Activity\tRequests\tErrors\n")
+			fmt.Fprintf(w, "----\t---------\t-------------\t--------\t------\n")
+
+			// Print each user
+			for _, u := range users {
+				ago := time.Since(u.lastSeen).Round(time.Second)
+				agoStr := formatDuration(ago)
+
+				status := ""
+				if u.errorCount > 0 {
+					status = fmt.Sprintf(" [%d errors]", u.errorCount)
+				}
+
+				fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%s\n",
+					truncate(u.name, 20),
+					agoStr,
+					u.endpoint,
+					u.totalCount,
+					status)
+			}
+			w.Flush()
+
+			// Show summary
+			fmt.Printf("\nTotal active users: %d\n", len(users))
 		}
+
+		time.Sleep(3 * time.Second)
+	}
+}
+
+func formatDuration(d time.Duration) string {
+	if d < time.Minute {
+		return fmt.Sprintf("%ds ago", int(d.Seconds()))
+	} else if d < time.Hour {
+		return fmt.Sprintf("%dm ago", int(d.Minutes()))
+	} else {
+		return fmt.Sprintf("%dh ago", int(d.Hours()))
 	}
 }
 
