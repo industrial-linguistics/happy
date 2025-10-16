@@ -60,16 +60,25 @@ func runLiveMode(db *sql.DB, tail int) {
 		// Get active users with their latest activity
 		rows, err := db.Query(`
             SELECT
-                name,
-                MAX(timestamp) as last_seen,
-                endpoint,
-                COUNT(*) as total_count,
-                SUM(CASE WHEN response_code >= 400 THEN 1 ELSE 0 END) as error_count
-            FROM activity_log
-            WHERE name IS NOT NULL AND name != ''
-              AND timestamp >= datetime('now', '-1 hour')
-            GROUP BY name
-            ORDER BY last_seen DESC
+                a.name,
+                a.timestamp as last_seen,
+                a.endpoint,
+                stats.total_count,
+                stats.error_count
+            FROM activity_log a
+            INNER JOIN (
+                SELECT
+                    name,
+                    MAX(timestamp) as max_timestamp,
+                    COUNT(*) as total_count,
+                    SUM(CASE WHEN response_code >= 400 THEN 1 ELSE 0 END) as error_count
+                FROM activity_log
+                WHERE name IS NOT NULL AND name != ''
+                  AND timestamp >= datetime('now', '-1 hour')
+                GROUP BY name
+            ) stats ON a.name = stats.name AND a.timestamp = stats.max_timestamp
+            WHERE a.name IS NOT NULL AND a.name != ''
+            ORDER BY a.timestamp DESC
         `)
 
 		if err != nil {
@@ -107,9 +116,9 @@ func runLiveMode(db *sql.DB, tail int) {
 				ago := time.Since(u.lastSeen).Round(time.Second)
 				agoStr := formatDuration(ago)
 
-				status := ""
+				errorStr := ""
 				if u.errorCount > 0 {
-					status = fmt.Sprintf(" [%d errors]", u.errorCount)
+					errorStr = fmt.Sprintf("%d", u.errorCount)
 				}
 
 				fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%s\n",
@@ -117,7 +126,7 @@ func runLiveMode(db *sql.DB, tail int) {
 					agoStr,
 					u.endpoint,
 					u.totalCount,
-					status)
+					errorStr)
 			}
 			w.Flush()
 
