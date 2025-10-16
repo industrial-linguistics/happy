@@ -32,7 +32,7 @@ type MessageResponse struct {
 }
 
 func main() {
-	baseURL := flag.String("url", "http://localhost/v1", "Base URL for the API")
+	baseURL := flag.String("url", "https://happy.industrial-linguistics.com/v1", "Base URL for the API")
 	delay := flag.Int("delay", 2000, "Average delay between requests in milliseconds")
 	flag.Parse()
 
