@@ -216,50 +216,56 @@ func (h *Handler) handleGetMessages(queryString string) int {
 		return 400
 	}
 
-	limit := 10
-	if l := values.Get("limit"); l != "" {
-		fmt.Sscanf(l, "%d", &limit)
-		if limit > 50 {
-			limit = 50
-		}
+	if len(recipient) > maxNameLen {
+		h.sendError(400, "recipient name too long")
+		return 400
 	}
 
-	rows, err := h.db.Query(`
-        SELECT message_id, from_user, message, created_at
-        FROM user_messages
-        WHERE to_user = ?
-        ORDER BY created_at DESC
-        LIMIT ?
-    `, recipient, limit)
+	sessionID := values.Get("session_id")
+
+	// Check rate limit
+	ip := os.Getenv("REMOTE_ADDR")
+	if !h.checkRateLimit(ip) {
+		h.sendError(429, "Rate limit exceeded")
+		return 429
+	}
+
+	// Get random message
+	var message string
+	err = h.db.QueryRow(`
+        SELECT message FROM messages
+        ORDER BY RANDOM() LIMIT 1
+    `).Scan(&message)
 
 	if err != nil {
-		log.Printf("Error fetching messages: %v", err)
+		log.Printf("Error fetching message: %v", err)
 		h.sendError(500, "Internal server error")
 		return 500
 	}
-	defer rows.Close()
 
-	var messages []map[string]interface{}
-	for rows.Next() {
-		var msgID, from, message string
-		var createdAt time.Time
-		rows.Scan(&msgID, &from, &message, &createdAt)
+	// Get sequence number for this recipient
+	var sequence int
+	h.db.QueryRow(`
+        SELECT COUNT(*) FROM activity_log
+        WHERE name = ? AND endpoint = '/messages'
+    `, recipient).Scan(&sequence)
+	sequence++ // This is their nth request
 
-		messages = append(messages, map[string]interface{}{
-			"message_id": msgID,
-			"from":       from,
-			"message":    message,
-			"timestamp":  createdAt,
-		})
-	}
+	messageID := generateMessageID()
 
-	response := map[string]interface{}{
-		"recipient": recipient,
-		"count":     len(messages),
-		"messages":  messages,
+	response := MessageResponse{
+		Name:      recipient,
+		Message:   message,
+		Timestamp: time.Now(),
+		MessageID: messageID,
+		Sequence:  sequence,
 	}
 
 	h.sendJSON(200, response)
+
+	// Log with recipient name and session info
+	h.logActivityWithDetails("/messages", recipient, sessionID, ip, 200)
+
 	return 200
 }
 
