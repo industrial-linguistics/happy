@@ -242,18 +242,18 @@
 
   <main>
     <section class="card">
-      <h2><span>🌈</span> GET /v1/message</h2>
+      <h2><span>🌈</span> GET /v1/automessage</h2>
       <div class="endpoint">
         <small>GET</small>
-        https://happy.industrial-linguistics.com/v1/message
+        https://happy.industrial-linguistics.com/v1/automessage
       </div>
-      <p>Fetch a random encouraging message personalized with the recipient’s name.</p>
+      <p>Fetch a random encouraging message personalized with the recipient's name.</p>
       <strong>Required query parameters:</strong>
       <ul>
         <li><code>name</code> &mdash; the lucky person who needs a boost (1&ndash;50 chars)</li>
       </ul>
       <p><strong>Optional:</strong> <code>session_id</code> to track training progress.</p>
-      <pre><code>curl "https://happy.industrial-linguistics.com/v1/message?name=Nova&session_id=go_bootcamp"
+      <pre><code>curl "https://happy.industrial-linguistics.com/v1/automessage?name=Nova&session_id=go_bootcamp"
 </code></pre>
     </section>
 
