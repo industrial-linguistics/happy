@@ -5,10 +5,12 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 	"text/tabwriter"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
+	"golang.org/x/term"
 )
 
 const dbPath = "/var/www/vhosts/happy.industrial-linguistics.com/data/positive-social.db"
@@ -54,8 +56,12 @@ func runLiveMode(db *sql.DB, tail int) {
 		// Clear screen and move to top
 		fmt.Print("\033[2J\033[H")
 
-		fmt.Println("=== Happy API Activity Monitor ===")
-		fmt.Printf("Last updated: %s (Press Ctrl+C to exit)\n\n", time.Now().Format("15:04:05"))
+		// Get terminal size
+		width, height, err := term.GetSize(int(os.Stdout.Fd()))
+		if err != nil {
+			// Fallback to reasonable defaults
+			width, height = 80, 24
+		}
 
 		// Get active users with their latest activity
 		rows, err := db.Query(`
@@ -82,17 +88,9 @@ func runLiveMode(db *sql.DB, tail int) {
         `)
 
 		if err != nil {
-			fmt.Printf("Error querying database: %v\n", err)
+			fmt.Printf("\033[31mError querying database: %v\033[0m\n", err)
 			time.Sleep(3 * time.Second)
 			continue
-		}
-
-		type UserActivity struct {
-			name       string
-			lastSeen   time.Time
-			endpoint   string
-			totalCount int
-			errorCount int
 		}
 
 		var users []UserActivity
@@ -103,39 +101,164 @@ func runLiveMode(db *sql.DB, tail int) {
 		}
 		rows.Close()
 
-		if len(users) == 0 {
-			fmt.Println("No activity in the last hour.")
-		} else {
-			// Print header
-			w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-			fmt.Fprintf(w, "Name\tLast Seen\tLast Activity\tRequests\tErrors\n")
-			fmt.Fprintf(w, "----\t---------\t-------------\t--------\t------\n")
-
-			// Print each user
-			for _, u := range users {
-				ago := time.Since(u.lastSeen).Round(time.Second)
-				agoStr := formatDuration(ago)
-
-				errorStr := ""
-				if u.errorCount > 0 {
-					errorStr = fmt.Sprintf("%d", u.errorCount)
-				}
-
-				fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%s\n",
-					truncate(u.name, 20),
-					agoStr,
-					u.endpoint,
-					u.totalCount,
-					errorStr)
-			}
-			w.Flush()
-
-			// Show summary
-			fmt.Printf("\nTotal active users: %d\n", len(users))
-		}
+		// Render the display
+		renderLiveDisplay(users, width, height)
 
 		time.Sleep(3 * time.Second)
 	}
+}
+
+// ANSI color codes
+const (
+	colorReset  = "\033[0m"
+	colorBold   = "\033[1m"
+	colorCyan   = "\033[36m"
+	colorGreen  = "\033[32m"
+	colorYellow = "\033[33m"
+	colorRed    = "\033[31m"
+	colorBlue   = "\033[34m"
+	colorGray   = "\033[90m"
+)
+
+type UserActivity struct {
+	name       string
+	lastSeen   time.Time
+	endpoint   string
+	totalCount int
+	errorCount int
+}
+
+func renderLiveDisplay(users []UserActivity, width, height int) {
+	// Header section (takes 6 lines)
+	title := "╔══ Happy API Activity Monitor ══╗"
+	if len(title)-6 < width { // -6 for ANSI codes overhead
+		// Center the title
+		padding := (width - len(title) + 6) / 2
+		if padding > 0 {
+			fmt.Print(strings.Repeat(" ", padding))
+		}
+	}
+	fmt.Printf("%s%s%s%s\n", colorBold, colorCyan, title, colorReset)
+
+	timestamp := time.Now().Format("15:04:05")
+	info := fmt.Sprintf("Last updated: %s │ Press Ctrl+C to exit", timestamp)
+	if len(info) < width {
+		padding := (width - len(info)) / 2
+		if padding > 0 {
+			fmt.Print(strings.Repeat(" ", padding))
+		}
+	}
+	fmt.Printf("%s%s%s\n", colorGray, info, colorReset)
+	fmt.Println()
+
+	if len(users) == 0 {
+		fmt.Printf("%s%s━━━ No activity in the last hour ━━━%s\n",
+			colorBold, colorYellow, colorReset)
+		return
+	}
+
+	// Calculate available rows for user data
+	// Reserve: 3 for header, 2 for table header, 1 for separator, 2 for footer
+	availableRows := height - 8
+	if availableRows < 1 {
+		availableRows = 1
+	}
+
+	// Limit users to fit in available rows
+	displayUsers := users
+	if len(users) > availableRows {
+		displayUsers = users[:availableRows]
+	}
+
+	// Calculate column widths based on terminal width
+	// Format: Name | Last Seen | Endpoint | Requests | Errors
+	nameWidth := 18
+	lastSeenWidth := 11
+	endpointWidth := width - nameWidth - lastSeenWidth - 20 - 10 - 10 // remaining space
+	if endpointWidth < 10 {
+		endpointWidth = 10
+	}
+	if endpointWidth > 40 {
+		endpointWidth = 40
+	}
+
+	// Print table header
+	fmt.Printf("%s%s┌─%s─┬─%s─┬─%s─┬─────────┬────────┐%s\n",
+		colorBold, colorBlue,
+		strings.Repeat("─", nameWidth),
+		strings.Repeat("─", lastSeenWidth),
+		strings.Repeat("─", endpointWidth),
+		colorReset)
+
+	fmt.Printf("%s%s│ %-*s │ %-*s │ %-*s │ Requests │ Errors │%s\n",
+		colorBold, colorBlue,
+		nameWidth, "Name",
+		lastSeenWidth, "Last Seen",
+		endpointWidth, "Endpoint",
+		colorReset)
+
+	fmt.Printf("%s%s├─%s─┼─%s─┼─%s─┼─────────┼────────┤%s\n",
+		colorBold, colorBlue,
+		strings.Repeat("─", nameWidth),
+		strings.Repeat("─", lastSeenWidth),
+		strings.Repeat("─", endpointWidth),
+		colorReset)
+
+	// Print each user
+	for i, u := range displayUsers {
+		ago := time.Since(u.lastSeen).Round(time.Second)
+		agoStr := formatDuration(ago)
+
+		// Color based on recency
+		rowColor := colorReset
+		if ago < 30*time.Second {
+			rowColor = colorGreen
+		} else if ago < 5*time.Minute {
+			rowColor = colorYellow
+		}
+
+		errorStr := "─"
+		errorColor := colorReset
+		if u.errorCount > 0 {
+			errorStr = fmt.Sprintf("%d", u.errorCount)
+			errorColor = colorRed
+		}
+
+		name := truncate(u.name, nameWidth)
+		endpoint := truncate(u.endpoint, endpointWidth)
+
+		fmt.Printf("%s│ %-*s │ %-*s │ %-*s │ %7d  │ %s%6s%s  │%s\n",
+			colorBlue,
+			nameWidth, rowColor+name+colorReset,
+			lastSeenWidth, rowColor+agoStr+colorReset,
+			endpointWidth, endpoint,
+			u.totalCount,
+			errorColor, errorStr, colorReset,
+			colorBlue)
+
+		// Add separator between rows (except for last row)
+		if i < len(displayUsers)-1 {
+			fmt.Printf("├─%s─┼─%s─┼─%s─┼─────────┼────────┤\n",
+				strings.Repeat("─", nameWidth),
+				strings.Repeat("─", lastSeenWidth),
+				strings.Repeat("─", endpointWidth))
+		}
+	}
+
+	// Bottom border
+	fmt.Printf("└─%s─┴─%s─┴─%s─┴─────────┴────────┘%s\n",
+		strings.Repeat("─", nameWidth),
+		strings.Repeat("─", lastSeenWidth),
+		strings.Repeat("─", endpointWidth),
+		colorReset)
+
+	// Footer
+	fmt.Println()
+	totalMsg := fmt.Sprintf("Total active users: %s%d%s", colorBold+colorGreen, len(users), colorReset)
+	if len(users) > len(displayUsers) {
+		totalMsg += fmt.Sprintf(" %s(showing %d)%s", colorGray, len(displayUsers), colorReset)
+	}
+	fmt.Println(totalMsg)
 }
 
 func formatDuration(d time.Duration) string {
